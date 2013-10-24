@@ -1,0 +1,4 @@
+*.pyc
+run
+killChrome
+*_local.*
