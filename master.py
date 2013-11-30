@@ -9,12 +9,11 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 import time
 import subprocess
-import sys
 import re
 from urlparse import urlparse
 import sys
 import platform
-from config import *
+from config_local import *
 
 IsWindows=False
 Line=''
