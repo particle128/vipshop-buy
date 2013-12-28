@@ -1,5 +1,10 @@
 #vip.com Shopping Assistant
 
+## Requirement
+```
+pip install -U selenium
+```
+
 ## Two Modes
 * 自选模式  
 配置config.ini，运行软件，键盘控制购买哪些看中的物品。  
@@ -9,6 +14,7 @@
 打开方式：设置config.ini中auto_pick下的AutoPickMode=True。  
 
 ## Configuration  
+`config_w.int`配置文件用于动态设置超时时间，不需要手动修改。
 `config.ini`配置文件分为url，screen，auto_pick，config，type，size，empty，sort几个section。  
 ###url 
 包括登陆界面和主页的url，一般不需要动。  
@@ -67,6 +73,7 @@ Size=XL 9 均码
 解释：有时候，你喜欢的品牌有多种商品，你比较感兴趣，比如XL的上衣，9号的鞋，还有均码的男包。这时候，你可以配置成例子所示。  
 程序会先进入"上衣 XL"的商品页面。一旦属于这一类的商品都浏览完毕，就会进入"鞋类 9"的商品页面，最后才会进入"男包 均码"页面。  
 
+
 ## Usage  
 ### Steps
 0. 将dist/下的chromedriver放到PATH中指定的目录下，或者添加本目录进PATH(windows下没有此步骤)。  
@@ -89,3 +96,7 @@ k——窗口向上滚动一行
 4——选择最右边的商品  
 退出：  
 q——在选择商品的过程中，输入q，退出程序。购物袋中有物品的窗口最大化，没有物品的窗口直接退出。  
+
+### ScreenShots
+![image](images/2.png)
+![image](images/3.png)

@@ -201,8 +201,10 @@ def process(driver):
 	# 页面内又含有分支页面
 	global Depth
 	if Depth<=1: #深度最多为1层
-		try: url=driver.current_url
-		except TimeoutException: pass
+		try: 
+			url=driver.current_url
+		except TimeoutException: 
+			pass
 		try:
 			driver.find_element_by_class_name('pro_list_pic')
 		except NoSuchElementException:
@@ -220,7 +222,7 @@ def process(driver):
 					print 'go into '+ele.get_attribute('href')
 					switch_do(driver,process)
 			Depth-=1
-			return
+			return 
 
 	sizeIdx=-1
 	for type,size in zip(Type,Size):
@@ -234,6 +236,7 @@ def process(driver):
 				url=driver.current_url
 			except TimeoutException:
 				pass
+			print driver.current_url
 			idx=driver.current_url.find('?')
 			originUrl=''
 			if idx!=-1:

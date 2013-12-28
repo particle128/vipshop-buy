@@ -39,14 +39,17 @@ def buy(driver,size):
 		try:
 			if ref:
 				driver.refresh()
-			# 用xpath定位element
-			ul=driver.find_element_by_xpath("//table[@class='tab_data']/tbody/tr/td/div/div/ul")
+			# 定位出价格显示区
+			pri_block=driver.find_element_by_class_name("size_list")
 			btn=driver.find_element_by_id('J_cartAdd_submit')
-			for li in ul.find_elements_by_tag_name('li'):
+			for li in pri_block.find_elements_by_tag_name('li'):
 				span=li.find_element_by_tag_name('span')
 				# 没有售完，且大小符合要求
-				if 'normal' in span.get_attribute('class') and re.search(SizeReg,span.text.strip('" ')):
-				#if 'normal' in span.get_attribute('class') and span.text.strip('" ') in Size:
+				class_attr=span.get_attribute('class')
+				if class_attr and 'normal' not in class_attr:
+					continue
+
+				if re.search(SizeReg,span.text.strip('" ')):
 					action=ActionChains(driver)
 					action.click(li).click(btn).perform() # ！！！ click会超时，至少2s的page_load_timeout
 					p_print('got size',span.text.strip())
