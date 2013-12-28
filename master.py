@@ -103,13 +103,15 @@ def send_to_subp(href):
 	global pIdx
 	while True:
 		if ps[pIdx].poll():#某些子进程已经出错退出了
+			# !!!wait进程，防止产生僵死进程
+			ps[pIdx].communicate()
 			del ps[pIdx]
 			print pIdx,'process quits by accident'
 			if ps:
 				pIdx=(pIdx+1)%len(ps)
 			else:
 				print 'all processes are dead...'
-				sys.exit(0) #退出
+				sys.exit(1) #退出
 		else:
 			break
 	ps[pIdx].stdin.write(href)
