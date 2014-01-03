@@ -2,78 +2,85 @@
 # coding=utf-8
 
 from __future__ import print_function #必须要出现在文件开头
+import time
+import sys
+import re
+import os
+import signal
+
 from selenium import webdriver
 from selenium.common.exceptions import ElementNotVisibleException
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
-import time
-import sys
-import re
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+
 from config import *
-import os
 
 MaxReload=2 #reload的最大次数
 HasGood=False
 TimeoutCnt=0 #超时计数
 
 def p_print(*args):
-	'带有pid的输出'
+	'''带有pid的输出'''
 	print(os.getpid(),':',end='')
 	for arg in args:
 		print(arg,end=' ')
 	print('\n',end='')
 
-def buy(driver,size):
+
+def buy(driver,size,pri_block):
 	"购买对应尺码的商品"
 	p_print('buy')
 	SizeReg=''
 	if size!=u'默认':
-		SizeReg=u'^'+size+u'([^.]|$)'
+		SizeReg=u'^'+size+u'([^.L]|$)'
 	else: #如果是默认尺码，那就所有商品都选
 		SizeReg=u'.*'
 	cnt=0
 	ref=False
-	while True:
-		try:
-			if ref:
-				driver.refresh()
-			# 定位出价格显示区
-			pri_block=driver.find_element_by_class_name("size_list")
-			btn=driver.find_element_by_id('J_cartAdd_submit')
-			for li in pri_block.find_elements_by_tag_name('li'):
-				span=li.find_element_by_tag_name('span')
-				# 没有售完，且大小符合要求
-				class_attr=span.get_attribute('class')
-				if class_attr and 'normal' not in class_attr:
-					continue
+#    while True: 
+#		try:
+#	if ref:
+#		driver.refresh()
+	# 定位出价格显示区
+	# pri_block=driver.find_element_by_class_name("size_list")
+	btn=driver.find_element_by_id('J_cartAdd_submit')
+	for li in pri_block.find_elements_by_tag_name('li'):
+		# 没有售完，且大小符合要求
+		class_attr=li.get_attribute('class')
+		if class_attr and 'sli_disabled' in class_attr: #售完的
+			continue
 
-				if re.search(SizeReg,span.text.strip('" ')):
-					action=ActionChains(driver)
-					action.click(li).click(btn).perform() # ！！！ click会超时，至少2s的page_load_timeout
-					p_print('got size',span.text.strip())
-					global HasGood #!!!全局变量
-					HasGood=True
-					time.sleep(1)
-		except TimeoutException:
-			p_print('timeout')
-			ref=False
-		except Exception as e:
-			p_print(e)
-			global TimeoutCnt
-			TimeoutCnt+=1
-			if cnt==MaxReload:
-				p_print('get to MaxReload,return')
-				return #直接函数返回，忽略该商品
-			else:
-				cnt+=1
-				cur=(cnt+1)*BuyTimeout
-				driver.set_page_load_timeout(cur) #每次超时时间，延长BuyTimeout
-				p_print(cur)
-				ref=True#重新加载该页
-		else:
-			break
+		span=li.find_element_by_tag_name('span')
+		if re.search(SizeReg,span.text.strip('" ')):
+			action=ActionChains(driver)
+			action.click(li).click(btn).perform() # ！！！ click会超时，至少2s的page_load_timeout
+			p_print('got size',span.text.strip())
+			global HasGood #!!!全局变量
+			HasGood=True
+			time.sleep(1)
+#		except TimeoutException:
+#			p_print('timeout')
+#			ref=False
+#		except Exception as e:
+#			p_print(e)
+#			global TimeoutCnt
+#			TimeoutCnt+=1
+#			if cnt==MaxReload:
+#				p_print('get to MaxReload,return')
+#				return #直接函数返回，忽略该商品
+#			else:
+#				cnt+=1
+#				cur=(cnt+1)*BuyTimeout
+#				driver.set_page_load_timeout(cur) #每次超时时间，延长BuyTimeout
+#				p_print(cur)
+#				ref=True#重新加载该页
+#		else:
+#			break
 
 def login(driver,user,pwd):
 	driver.get(LoginUrl)
@@ -101,18 +108,17 @@ if __name__=='__main__':
 	login(driver,user,pwd)
 
 	try:
-		driver.set_page_load_timeout(BuyTimeout) #从配置文件读取timeout值
+		driver.set_page_load_timeout(BuyTimeout) # 从配置文件读取timeout值
 		while True:
-			#select([sys.stdin],[],[])
-			infos=sys.stdin.readline() #!!!read()不行
-			#退出
-			if infos.find('q')==0: #开头是q的，表示退出
-				if TimeoutCnt>=2:#发生两次超时
+			infos=sys.stdin.readline() #!!!read()不行，是全缓冲的
+			# 退出
+			if infos.find('q')==0: # 开头是q的，表示退出
+				if TimeoutCnt>=2:  # 发生两次超时
 					timeout_inc(0.5)
 				if HasGood:
 					p_print('has goods')
-					driver.maximize_window() #最大化有物品的窗口
-					#停止
+					driver.maximize_window() # 最大化有物品的窗口
+					# 停止
 					while True:
 						time.sleep(10000)
 				else:
@@ -122,16 +128,26 @@ if __name__=='__main__':
 			sizeIdx=int(infos.split()[1])
 			size=Size[sizeIdx]
 			p_print(href,size)
-			try:
+			cpid=os.fork()
+			if cpid==0:
 				driver.get(href)
-			except TimeoutException:
+				os._exit(0)
+
+			try:
+				pri_block = WebDriverWait(driver, 20).until(
+					EC.presence_of_element_located((By.CLASS_NAME,'size_list')))
+				# kill the child process
+				os.kill(cpid,sinal.SIG_KILL)
+			except:
 				pass
-			buy(driver,size)
+			else:
+				buy(driver,size,pri_block)
+#			try:
+#				driver.get(href)
+#			except TimeoutException:
+#				pass
 	except Exception as e:
 		p_print('error:',e)
 	finally:
 		driver.quit()
-		p_print('subprocess exits')
-
-
 
