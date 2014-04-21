@@ -1,5 +1,10 @@
 #vip.com Shopping Assistant
 
+## Notice
+
+2014.04.21 :  
+这几天登陆发现，唯品会登陆的时候，加上验证码了，我不会破解验证码，只能用户手动输入了！！
+
 ## Requirement
 ```
 pip install -U selenium
