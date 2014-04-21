@@ -98,12 +98,11 @@ if Debug:
 	print LoginUrl
 	pOpt()
 
-def timeout_inc(inc):
+def set_timeout():
 	'修改配置文件的超时时间BuyTimeout'
-	cur=BuyTimeout+inc
 	global cf1
-	cf1.set('timeout','buytimeout',str(cur))
+	cf1.set('timeout','buytimeout',str(BuyTimeout))
 	with open(W_CONFIG_FILE,'wb') as configFile:
 		cf1.write(configFile)
-	print '新BuyTimeout已设置为:'+str(cur)
+	print '新BuyTimeout已设置为:'+str(BuyTimeout)
 

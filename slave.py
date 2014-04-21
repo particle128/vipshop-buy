@@ -20,9 +20,11 @@ from selenium.webdriver.common.by import By
 
 from config import *
 
-MaxReload = 2  # reload的最大次数
+# MaxReload = 2  # reload的最大次数
 HasGood = False
-TimeoutCnt = 0  # 超时计数
+# TimeoutCnt = 0  # 超时计数
+SuccessCnt = 0  # 连续成功计数
+State = 'ExponState' # 最初是指数增长阶段
 
 
 def p_print(*args):
@@ -41,8 +43,9 @@ def buy(driver, size):
         SizeReg = u'^' + size + u'([^.L]|$)'
     else:  # 如果是默认尺码，那就所有商品都选
         SizeReg = u'.*'
-    cnt = 0
+    timeout_flag = False
     ref = False
+    global BuyTimeout, SuccessCnt, State
     while True:
         try:
             if ref:
@@ -55,7 +58,6 @@ def buy(driver, size):
                 class_attr = li.get_attribute('class')
                 if class_attr and 'sli_disabled' in class_attr:  # 售完的
                     continue
-
                 span = li.find_element_by_tag_name('span')
                 print("test",span.text)
                 if re.search(SizeReg, span.text.strip('" ')):
@@ -71,19 +73,33 @@ def buy(driver, size):
             ref=False
         except Exception as e:
             p_print(e)
-            global TimeoutCnt
-            TimeoutCnt+=1
-            if cnt==MaxReload:
-                p_print('get to MaxReload,return')
-                return #直接函数返回，忽略该商品
+            timeout_flag = True
+
+            if State == 'ExponState':
+                BuyTimeout*=2    # 指数增长
             else:
-                cnt+=1
-                cur=(cnt+1)*BuyTimeout
-                driver.set_page_load_timeout(cur) #每次超时时间，延长BuyTimeout
-                p_print(cur)
-                ref=True#重新加载该页
+                BuyTimeout+=1    # 线性调整
+                if State == 'LinearState':
+                    State = 'FinalState'
+
+            driver.set_page_load_timeout(BuyTimeout) 
+            p_print('new timeout')
+            ref=True#重新加载该页
         else:
             break
+
+    if not timeout_flag:
+        if State == 'ExponState':
+            SuccessCnt += 1
+            if SuccessCnt == 2:
+                State = 'LinearState' # 指数增长阶段，连续两次不超时，进入线性调整阶段
+        elif State == 'LinearState':
+            BuyTimeout-=1      # 线性调整
+        else:
+            pass # FinalState不进行-1的操作
+    elif State == 'ExponState':
+        SuccessCnt = 0
+
 
 
 def login(driver, user, pwd):
@@ -117,8 +133,7 @@ if __name__ == '__main__':
             infos = sys.stdin.readline()  # !!!read()不行，是全缓冲的
             # 退出
             if infos.find('q') == 0:  # 开头是q的，表示退出
-                if TimeoutCnt >= 2:  # 发生两次超时
-                    timeout_inc(0.5)
+                set_timeout() # 修改配置文件里的timeout
                 if HasGood:
                     p_print('has goods')
                     driver.maximize_window()  # 最大化有物品的窗口
